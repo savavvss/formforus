@@ -8,4 +8,5 @@ def main():
     return f.render_template('index.html')
 
 
-app.run()
+
+app.run(host='25.47.197.186', port=80, debug=True)
