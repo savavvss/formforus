@@ -9,4 +9,4 @@ def main():
 
 
 
-app.run(host='25.47.197.186', port=80, debug=True)
+app.run(host='localhost', port=80, debug=True)
