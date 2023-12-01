@@ -27,15 +27,19 @@
         </div>
     </header>
     <main>
-    <form action="/" method="post">
-        <input type="text" class="mesageheader" name="mesageheader">
-        <input type="text" class="mesagetext" name="mesagetest">
-        <input type="submit">
-    </form>
-    {% for i in message %}
-    {{i}}
-    {% endfor %}
-    </main>
 
+        <h2>Список чатов</h2>
+        <ul>
+            {% for chat in chats %}
+                <li><a href="{{ url_for('chat', chat_id=chat.id) }}">{{ chat.name }}</a></li>
+            {% endfor %}
+        </ul>
+    
+        <h2>Создать новый чат</h2>
+        <form action="{{ url_for('create_chat') }}" method="post">
+            <label for="chat_name">Название чата:</label>
+            <input type="text" name="chat_name" required>
+            <button type="submit">Создать</button>
+        </form>
 </body>
 </html>

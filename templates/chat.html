@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+</head>
+<body>
+    <h1>Chat: {{ chat.name }}</h1>
+    
+    <div>
+        {% for message in chat.messages %}
+            <p>{{ message.user.username }}: {{ message.content }}</p>
+        {% endfor %}
+    </div>
+
+    <form method="POST" action="{{ url_for('chat', chat_id=chat.id) }}">
+        <label for="message">Message:</label>
+        <textarea name="message" id="message" required></textarea>
+        <button type="submit">Send</button>
+    </form>
+</body>
+</html>

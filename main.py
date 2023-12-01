@@ -6,16 +6,37 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'secret_key'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+user_chat_association = db.Table('user_chat_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('chat_id', db.Integer, db.ForeignKey('chat.id'))
+)
+
+class Chat(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    messages = db.relationship('Message', backref='chat', lazy=True)
+
+# Обновление модели User
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
+    chats = db.relationship('Chat', secondary='user_chat_association', backref='users', lazy=True)
 
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=False)
+    user = db.relationship('User', backref='messages', lazy=True)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -43,7 +64,8 @@ def load_user(user_id):
 
 @app.route('/')
 def main():
-    return render_template('index.html', logged_in=current_user.is_authenticated)
+    chats = Chat.query.all()
+    return render_template('index.html', logged_in=current_user.is_authenticated, chats=chats)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -68,7 +90,41 @@ def logout():
     flash('Вы успешно вышли из системы.', 'info')
     return redirect(url_for('main'))
 
-# ... (ваш текущий код)
+@app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
+@login_required
+def chat(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+
+    if request.method == 'POST':
+        message_content = request.form['message']
+
+        new_message = Message(content=message_content, user_id=current_user.id, chat_id=chat.id)
+
+        try:
+            db.session.add(new_message)
+            db.session.commit()
+            flash('Сообщение отправлено успешно!', 'success')
+        except:
+            db.session.rollback()
+            flash('Ошибка отправки сообщения.', 'danger')
+
+    return render_template('chat.html', chat=chat)
+
+@app.route('/create_chat', methods=['POST'])
+@login_required
+def create_chat():
+    chat_name = request.form['chat_name']
+    new_chat = Chat(name=chat_name, user_id=current_user.id)
+
+    try:
+        db.session.add(new_chat)
+        db.session.commit()
+        flash('Чат создан успешно!', 'success')
+    except:
+        db.session.rollback()
+        flash('Ошибка создания чата.', 'danger')
+
+    return redirect(url_for('main'))
 
 if __name__ == '__main__':
     with app.app_context():
